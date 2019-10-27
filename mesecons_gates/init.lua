@@ -120,6 +120,22 @@ register_gate("xor", 2, function (val1, val2) return (val1 or val2) and not (val
 	 {"mesecons:mesecon", "", ""}},
 	"XOR Gate")
 
+register_gate("not", 1, function (input) return not input end,
+	{{"mesecons:mesecon", "xtraores:titanium_ingot", "mesecons:mesecon"}},
+	"NOT Gate")
+
+register_gate("nand", 2, function (val1, val2) return not (val1 and val2) end,
+	{{"mesecons:mesecon", "", ""},
+	 {"", "mesecons_materials:silicon", "mesecons_torch:mesecon_torch_on"},
+	 {"mesecons:mesecon", "", "xtraores:titanium_ingot"}},
+	"NAND Gate")
+
+register_gate("nor", 2, function (val1, val2) return not (val1 or val2) end,
+	{{"mesecons:mesecon", "", ""},
+	 {"", "mesecons:mesecon", "mesecons_torch:mesecon_torch_on"},
+	 {"mesecons:mesecon", "xtraores:titanium_ingot", ""}},
+	"NOR Gate")
+
 register_gate("or", 2, function (val1, val2) return (val1 or val2) end,
 	{{"mesecons:mesecon", "", ""},
 	 {"", "mesecons:mesecon", "mesecons:mesecon"},
