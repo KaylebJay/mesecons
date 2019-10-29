@@ -105,7 +105,7 @@ local function register_gate(name, inputnumber, assess, recipe, description)
 end
 
 register_gate("diode", 1, function (input) return input end,
-	{{"mesecons:mesecon", "mesecons_torch:mesecon_torch_on", "mesecons_torch:mesecon_torch_on"}},
+	{{"mesecons:mesecon", "mesecons_materials:glue", "mesecons_materials:glue"}},
 	"Diode")
 
 register_gate("and", 2, function (val1, val2) return val1 and val2 end,
@@ -126,7 +126,7 @@ register_gate("not", 1, function (input) return not input end,
 
 register_gate("nand", 2, function (val1, val2) return not (val1 and val2) end,
 	{{"mesecons:mesecon", "", ""},
-	 {"", "mesecons_materials:silicon", "xtraores:titanium_ingot"},
+	 {"", "mesecons_materials:glue", "xtraores:titanium_ingot"},
 	 {"mesecons:mesecon", "", ""}},
 	"NAND Gate")
 
