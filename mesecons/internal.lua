@@ -371,6 +371,9 @@ end
 -- Follow all all conductor paths replacing conductors that were already
 -- looked at, activating / changing all effectors along the way.
 function mesecon.turnon(pos, link)
+	if math.random(0,100) == 0 then
+		minetest.log("action", ("Mesecons: Wire turns on at (%d,%d,%d)"):format(pos.x, pos.y, pos.z))
+	end
 	local frontiers = {{pos = pos, link = link}}
 
 	local depth = 1
