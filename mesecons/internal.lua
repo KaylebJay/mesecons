@@ -198,7 +198,7 @@ function mesecon.activate(pos, node, rulename, depth)
 		end
 		return
 	end
-	mesecon.queue:add_action(pos, "activate", {rulename}, nil, rulename, 1 / depth)
+	mesecon.queue:add_action(pos, "activate", {rulename}, nil, rulename, depth)
 end
 
 
@@ -221,7 +221,7 @@ function mesecon.deactivate(pos, node, rulename, depth)
 		end
 		return
 	end
-	mesecon.queue:add_action(pos, "deactivate", {rulename}, nil, rulename, 1 / depth)
+	mesecon.queue:add_action(pos, "deactivate", {rulename}, nil, rulename, depth)
 end
 
 
@@ -248,7 +248,7 @@ function mesecon.changesignal(pos, node, rulename, newstate, depth)
 	-- Include "change" in overwritecheck so that it cannot be overwritten
 	-- by "active" / "deactivate" that will be called upon the node at the same time.
 	local overwritecheck = {"change", rulename}
-	mesecon.queue:add_action(pos, "change", {rulename, newstate}, nil, overwritecheck, 1 / depth)
+	mesecon.queue:add_action(pos, "change", {rulename, newstate}, nil, overwritecheck, depth)
 end
 
 -- Conductors

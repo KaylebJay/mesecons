@@ -44,10 +44,10 @@ end
 -- However, even that does not work in some cases, that's why we delay the time the globalsteps
 -- start to be execute by 5 seconds
 local get_highest_priority = function (actions)
-	local highestp = -1
+	local highestp = 2000000000
 	local highesti
 	for i, ac in ipairs(actions) do
-		if ac.priority > highestp then
+		if ac.priority < highestp then
 			highestp = ac.priority
 			highesti = i
 		end
@@ -67,6 +67,7 @@ minetest.register_globalstep(function (dtime)
 	local actions_now={}
 
 	mesecon.queue.actions = {}
+	local lowest_priority = 0;
 
 	-- sort actions into two categories:
 	-- those toexecute now (actions_now) and those to execute later (mesecon.queue.actions)
@@ -75,14 +76,35 @@ minetest.register_globalstep(function (dtime)
 			ac.time = ac.time - dtime -- executed later
 			table.insert(mesecon.queue.actions, ac)
 		else
-			table.insert(actions_now, ac)
+			if actions_now[ac.priority] == nil then
+				actions_now[ac.priority] = {}
+			end
+			table.insert(actions_now[ac.priority], ac)
+			if ac.priority > lowest_priority then
+				lowest_priority = ac.priority
+			end
 		end
 	end
 
-	while(#actions_now > 0) do -- execute highest priorities first, until all are executed
-		local hp = get_highest_priority(actions_now)
-		mesecon.queue:execute(actions_now[hp])
-		table.remove(actions_now, hp)
+	local end_at = minetest.get_us_time() + 90000
+	local p = 0
+	-- execute highest priorities first, until all are executed
+	while p < lowest_priority and minetest.get_us_time() < end_at do  
+		p = p+1
+		if actions_now[p] ~= nil then
+			while #(actions_now[p]) > 0 and minetest.get_us_time() < end_at do
+				--local hp = get_highest_priority(actions_now)
+				mesecon.queue:execute(actions_now[p][#(actions_now[p])])
+				actions_now[p][#(actions_now[p])] = nil
+			end
+		end
+	end
+	
+	-- Actions which weren't performed in time will be executed later.
+	for i, p in ipairs(actions_now) do
+		for j, ac in ipairs(p) do
+			table.insert(mesecon.queue.actions, ac)
+		end
 	end
 end)
 
