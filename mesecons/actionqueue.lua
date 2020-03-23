@@ -4,6 +4,12 @@ function mesecon.queue:add_function(name, func)
 	mesecon.queue.funcs[name] = func
 end
 
+local function get_blockpos(pos)
+	return {x = math.floor(pos.x / 16),
+	        y = math.floor(pos.y / 16),
+	        z = math.floor(pos.z / 16)}
+end
+
 -- If add_action with twice the same overwritecheck and same position are called, the first one is overwritten
 -- use overwritecheck nil to never overwrite, but just add the event to the queue
 -- priority specifies the order actions are executed within one globalstep, highest first
@@ -19,10 +25,14 @@ function mesecon.queue:add_action(pos, func, params, time, overwritecheck, prior
 				owcheck=(overwritecheck and mesecon.tablecopy(overwritecheck)) or nil,
 				priority=priority}
 
+	local hash = minetest.hash_node_position(get_blockpos(pos))
+	if mesecon.queue.actions[hash] == nil then
+		mesecon.queue.actions[hash] = {}
+	end
 	local toremove = nil
 	-- Otherwise, add the action to the queue
 	if overwritecheck then -- check if old action has to be overwritten / removed:
-		for i, ac in ipairs(mesecon.queue.actions) do
+		for i, ac in ipairs(mesecon.queue.actions[hash]) do
 			if(vector.equals(pos, ac.pos)
 			and mesecon.cmpAny(overwritecheck, ac.owcheck)) then
 				toremove = i
@@ -32,10 +42,10 @@ function mesecon.queue:add_action(pos, func, params, time, overwritecheck, prior
 	end
 
 	if (toremove ~= nil) then
-		table.remove(mesecon.queue.actions, toremove)
+		table.remove(mesecon.queue.actions[hash], toremove)
 	end
 
-	table.insert(mesecon.queue.actions, action)
+	table.insert(mesecon.queue.actions[hash], action)
 end
 
 -- execute the stored functions on a globalstep
@@ -63,27 +73,32 @@ minetest.register_globalstep(function (dtime)
 	-- don't even try if server has not been running for XY seconds; resumetime = time to wait
 	-- after starting the server before processing the ActionQueue, don't set this too low
 	if (m_time < resumetime) then return end
-	local actions = mesecon.tablecopy(mesecon.queue.actions)
+	--local actions = mesecon.tablecopy(mesecon.queue.actions)
 	local actions_now={}
-
-	mesecon.queue.actions = {}
-	local lowest_priority = 0;
 
 	-- sort actions into two categories:
 	-- those toexecute now (actions_now) and those to execute later (mesecon.queue.actions)
-	for i, ac in ipairs(actions) do
-		if pipeworks and not pipeworks.is_active(ac.pos) then -- not loaded
-			table.insert(mesecon.queue.actions, ac)
-		elseif ac.time > 0 then
-			ac.time = ac.time - dtime -- executed later
-			table.insert(mesecon.queue.actions, ac)
-		else
-			if actions_now[ac.priority] == nil then
-				actions_now[ac.priority] = {}
+	local lowest_priority = 0;
+	for hash, queue in pairs(mesecon.queue.actions) do
+		if not pipeworks or pipeworks.active_blocks[hash] ~= nil then
+			local actions = mesecon.tablecopy(queue)
+			mesecon.queue.actions[hash] = {}
+			for i, ac in ipairs(actions) do
+				if ac.time > 0 then
+					ac.time = ac.time - dtime -- executed later
+					table.insert(mesecon.queue.actions[hash], ac)
+				else
+					if actions_now[ac.priority] == nil then
+						actions_now[ac.priority] = {}
+					end
+					table.insert(actions_now[ac.priority], ac)
+					if ac.priority > lowest_priority then
+						lowest_priority = ac.priority
+					end
+				end
 			end
-			table.insert(actions_now[ac.priority], ac)
-			if ac.priority > lowest_priority then
-				lowest_priority = ac.priority
+			if #(mesecon.queue.actions[hash]) == 0 then
+				mesecon.queue.actions[hash] = nil
 			end
 		end
 	end
@@ -105,7 +120,11 @@ minetest.register_globalstep(function (dtime)
 	-- Actions which weren't performed in time will be executed later.
 	for i, p in ipairs(actions_now) do
 		for j, ac in ipairs(p) do
-			table.insert(mesecon.queue.actions, ac)
+			local hash = minetest.hash_node_position(get_blockpos(ac.pos))
+			if mesecon.queue.actions[hash] == nil then
+				mesecon.queue.actions[hash] = {}
+			end
+			table.insert(mesecon.queue.actions[hash], ac)
 		end
 	end
 end)
